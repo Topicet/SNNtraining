@@ -18,7 +18,7 @@ if __name__ == "__main__":
     print("AFN (Rate Coding):", afn_rate)
     print("AFN (Latency Coding):", afn_latency)
 
-    latencyEncoder.showTargetNumber(latencyEncodedData)
+    latencyEncoder.saveAllVisualizations(latencyEncodedData)
     rateEncoder.showTargetNumber(rateEncodedData)
 
 

@@ -38,14 +38,10 @@ class LatencyEncoder():
         spike_time = tau * torch.log(data / (data - threshold))
         return spike_time
     
-    def plotIntensityVStime(self):
-        raw_input = torch.arange(0, 5, 0.05)
-        spike_times = self.convert_to_time(raw_input)
-
-        plt.plot(raw_input, spike_times)
-        plt.xlabel('Input Value')
-        plt.ylabel('Spike Time (s)')
-        plt.show()
+    def saveAllVisualizations(self, data):
+        self.animateSpiking(data)
+        self.showTargetNumber(data)
+        self.showRasterPlot(data)
 
 
     def animateSpiking(self, data):
@@ -54,8 +50,9 @@ class LatencyEncoder():
         anim = splt.animator(data, fig, ax)
         plt.rcParams['animation.ffmpeg_path'] = 'C:\\ffmpeg\\bin\\ffmpeg.exe'
         HTML(anim.to_html5_video())
-        print(f"The corresponding target is: {self.targets_iterator[0]}")
-        plt.show()    
+        anim.save("LatencyEncodingResults\\LatencyEncoded1stDigit.gif")
+        #print(f"The corresponding target is: {self.targets_iterator[0]}")
+
 
     def showTargetNumber(self, data):        
         fig, axes = plt.subplots(2, 5, figsize=(10, 5))  
@@ -79,4 +76,5 @@ class LatencyEncoder():
         plt.title("Input Layer")
         plt.xlabel("Time step")
         plt.ylabel("Neuron Number")
-        plt.show()
+        plt.savefig("LatencyEncodingResults\\LatencyEncoded1stDigitRasterPlot", bbox_inches="tight", dpi=300)
+        plt.close(fig) 

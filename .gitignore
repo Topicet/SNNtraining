@@ -1,0 +1,9 @@
+LatencyEncodingResults/*
+RateEncodingResults/*
+
+__pycache__/
+.vscode/
+
+*.png
+*.gif
+*.mp4
