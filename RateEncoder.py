@@ -7,8 +7,6 @@ import matplotlib.pyplot as plt
 import snntorch.spikeplot as splt
 from IPython.display import HTML
 
-
-
 class RateEncoder():
 
     def __init__(self, batch_size=10, num_classes=10, num_subsets=10):
@@ -36,10 +34,10 @@ class RateEncoder():
 
     def spike_data(self, numberOfSteps, gain):
         self.gain = gain
-        data = spikegen.rate(self.data_iterator, num_steps=numberOfSteps, gain=gain)
-        return data[:, 0, 0]
+        return spikegen.rate(self.data_iterator, num_steps=numberOfSteps, gain=gain)
 
     def animateSpiking(self, data):
+        data = data[:, 0, 0]
         fig, ax = plt.subplots()
         anim = splt.animator(data, fig, ax)
         plt.rcParams['animation.ffmpeg_path'] = 'C:\\ffmpeg\\bin\\ffmpeg.exe'
@@ -48,6 +46,7 @@ class RateEncoder():
         plt.show()    
 
     def showTargetNumber(self, data):
+        data = data[:, 0, 0]
         plt.figure(facecolor="w")
         plt.subplot(1,2,1)
         plt.imshow(data.mean(axis=0).reshape((28,-1)).cpu(), cmap='binary')
@@ -56,6 +55,7 @@ class RateEncoder():
         plt.show()
 
     def showRasterPlot(self, data):
+        data = data[:, 0, 0]
         data = data.reshape((100, -1))
         fig = plt.figure(facecolor="w", figsize=(10, 5))
         ax = fig.add_subplot(111)
