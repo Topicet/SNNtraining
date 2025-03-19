@@ -40,7 +40,7 @@ class LatencyEncoder():
     
     def saveAllVisualizations(self, data):
         self.animateSpiking(data)
-        self.showTargetNumber(data)
+        self.showTargetNumbers(data)
         self.showRasterPlot(data)
 
 
@@ -54,7 +54,7 @@ class LatencyEncoder():
         #print(f"The corresponding target is: {self.targets_iterator[0]}")
 
 
-    def showTargetNumber(self, data):        
+    def showTargetNumbers(self, data):        
         fig, axes = plt.subplots(2, 5, figsize=(10, 5))  
         
         for i, ax in enumerate(axes.flat):
@@ -78,3 +78,20 @@ class LatencyEncoder():
         plt.ylabel("Neuron Number")
         plt.savefig("LatencyEncodingResults\\LatencyEncoded1stDigitRasterPlot", bbox_inches="tight", dpi=300)
         plt.close(fig) 
+
+    def dataset_summary(self, data):
+        print("Dataset Information:")
+        print(f"🔹 Batch Size: {self.batch_size}")
+        print(f"🔹 Number of Subsets (Total Images): {self.num_subsets}")
+        print(f"🔹 Time Steps: {self.num_steps}")
+        print(f"🔹 Data Shape: {data.shape}")
+
+        afn_per_digit = data.sum(dim=(0, 2, 3, 4)) / self.num_steps
+        print("Average Firing Number (AFN) per Digit:")
+        for i, afn in enumerate(afn_per_digit):
+            print(f"🔹 Digit {self.targets_iterator[i]}: {afn.item():.2f}")
+
+        print("Spike Time Distribution:")
+        print(f"🔹 Min spike time: {data.min().item():.2f}")
+        print(f"🔹 Max spike time: {data.max().item():.2f}")
+        print(f"🔹 Mean spike time: {data.mean().item():.2f}")

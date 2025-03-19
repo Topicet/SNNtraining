@@ -35,6 +35,12 @@ class RateEncoder():
     def spike_data(self, numberOfSteps, gain):
         self.gain = gain
         return spikegen.rate(self.data_iterator, num_steps=numberOfSteps, gain=gain)
+    
+        
+    def saveAllVisualizations(self, data):
+        self.animateSpiking(data)
+        self.showTargetNumbers(data)
+        self.showRasterPlot(data)
 
     def animateSpiking(self, data):
         data = data[:, 0, 0]
@@ -42,10 +48,9 @@ class RateEncoder():
         anim = splt.animator(data, fig, ax)
         plt.rcParams['animation.ffmpeg_path'] = 'C:\\ffmpeg\\bin\\ffmpeg.exe'
         HTML(anim.to_html5_video())
-        print(f"The corresponding target is: {self.targets_iterator[0]}")
-        plt.show()    
+        anim.save("RateEncodingResults\\RateEncoded1stDigit.gif")
 
-    def showTargetNumber(self, data):        
+    def showTargetNumbers(self, data):        
         fig, axes = plt.subplots(2, 5, figsize=(10, 5))  
         
         for i, ax in enumerate(axes.flat):
@@ -67,4 +72,5 @@ class RateEncoder():
         plt.title("Input Layer")
         plt.xlabel("Time step")
         plt.ylabel("Neuron Number")
-        plt.show()
+        plt.savefig("RateEncodingResults\\RateEncoded1stDigitRasterPlot", bbox_inches="tight", dpi=300)
+        plt.close(fig) 
