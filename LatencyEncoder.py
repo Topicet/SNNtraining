@@ -66,7 +66,8 @@ class LatencyEncoder():
             ax.axis('off')
             ax.set_title(f"Target Value: {self.targets_iterator[i]}")
 
-        plt.show()
+        plt.savefig("LatencyEncodingResults\\LatencyEncoded10Digits", bbox_inches="tight", dpi=300)
+        plt.close(fig) 
 
     def showRasterPlot(self, data):
         data = data[:, 0, 0]

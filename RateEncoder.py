@@ -45,14 +45,17 @@ class RateEncoder():
         print(f"The corresponding target is: {self.targets_iterator[0]}")
         plt.show()    
 
-    def showTargetNumber(self, data):
-        data = data[:, 0, 0]
-        plt.figure(facecolor="w")
-        plt.subplot(1,2,1)
-        plt.imshow(data.mean(axis=0).reshape((28,-1)).cpu(), cmap='binary')
-        plt.axis('off')
-        plt.title(f'Gain = {self.gain}')
-        plt.show()
+    def showTargetNumber(self, data):        
+        fig, axes = plt.subplots(2, 5, figsize=(10, 5))  
+        
+        for i, ax in enumerate(axes.flat):
+            img = data[:, i].mean(dim=0).squeeze().cpu()
+            ax.imshow(img, cmap='binary')
+            ax.axis('off')
+            ax.set_title(f"Target Value: {self.targets_iterator[i]}")
+
+        plt.savefig("RateEncodingResults\\RateEncoded10Digits", bbox_inches="tight", dpi=300)
+        plt.close(fig) 
 
     def showRasterPlot(self, data):
         data = data[:, 0, 0]
