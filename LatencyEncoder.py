@@ -1,4 +1,5 @@
 import snntorch as snn
+from Functions.function import rmse
 from snntorch import utils, spikegen
 import torch
 from torch.utils.data import DataLoader
@@ -18,17 +19,34 @@ class LatencyEncoder():
 
     def prepare_data(self):
         self.transform = transforms.Compose([
-                transforms.Resize((28,28)),
-                transforms.Grayscale(),
-                transforms.ToTensor(),
-                transforms.Normalize((0,), (1,))])
-        
-        self.dataset = datasets.MNIST('MNIST', train=True, download=True, transform=self.transform)
-        self.dataset = utils.data_subset(self.dataset, self.num_subsets)
-        #print(f"The size of mnist_train is {len(self.dataset)}")
-        self.train_loader = DataLoader(self.dataset, batch_size=self.batch_size, shuffle=True)
+            transforms.Resize((28, 28)),
+            transforms.Grayscale(),
+            transforms.ToTensor(),
+            transforms.Normalize((0,), (1,))
+        ])
+
+        full_dataset = datasets.MNIST('MNIST', train=True, download=True, transform=self.transform)
+
+        #select digits 0-9
+        digit_samples = {i: None for i in range(10)}
+        for image, label in full_dataset:
+            if digit_samples[label] is None:
+                digit_samples[label] = (image, label)
+
+            if all(digit_samples.values()): 
+                break
+
+        images, labels = zip(*digit_samples.values())
+        self.dataset = list(zip(images, labels))
+
+        self.train_loader = DataLoader(self.dataset, batch_size=self.batch_size, shuffle=False)
         self.data = iter(self.train_loader)
         self.data_iterator, self.targets_iterator = next(self.data)
+
+        
+        self.targets_iterator = list(self.targets_iterator.numpy())
+
+        print(f"Selected Digits: {self.targets_iterator}")  # Should print [0,1,2,3,4,5,6,7,8,9]
 
     def spike_data(self, numberOfSteps, tau, threshold):
         return spikegen.latency(self.data_iterator, num_steps=numberOfSteps, tau=tau, threshold=threshold,normalize=True,linear=True,clip=True)
@@ -52,7 +70,6 @@ class LatencyEncoder():
         HTML(anim.to_html5_video())
         anim.save("LatencyEncodingResults\\LatencyEncoded1stDigit.gif")
         #print(f"The corresponding target is: {self.targets_iterator[0]}")
-
 
     def showTargetNumbers(self, data):        
         fig, axes = plt.subplots(2, 5, figsize=(10, 5))  
@@ -80,7 +97,7 @@ class LatencyEncoder():
         plt.close(fig) 
 
     def dataset_summary(self, data):
-        print("Dataset Information:")
+        print("Latency Dataset Information:")
         print(f"🔹 Batch Size: {self.batch_size}")
         print(f"🔹 Number of Subsets (Total Images): {self.num_subsets}")
         print(f"🔹 Time Steps: {self.num_steps}")
@@ -95,3 +112,29 @@ class LatencyEncoder():
         print(f"🔹 Min spike time: {data.min().item():.2f}")
         print(f"🔹 Max spike time: {data.max().item():.2f}")
         print(f"🔹 Mean spike time: {data.mean().item():.2f}")
+
+    def reconstruct_images(self, data, filename="LatencyEncodingResults/LatencyEncoded_Reconstruction.png"):
+        reconstructed_images = data.mean(dim=0).squeeze().cpu()
+
+        original_images = self.data_iterator.squeeze().cpu()
+
+
+        fig, axes = plt.subplots(2, 10, figsize=(15, 3))
+
+        for i in range(10):
+
+            print(f'RMSE for figure {i}: {rmse(original_images[i], reconstructed_images[i])}')
+
+            axes[0, i].imshow(original_images[i], cmap='gray')
+            axes[0, i].set_title(f"Original {self.targets_iterator[i]}")
+            axes[0, i].axis('off')
+
+            axes[1, i].imshow(reconstructed_images[i], cmap='gray')
+            axes[1, i].set_title(f"New {self.targets_iterator[i]}")
+            axes[1, i].axis('off')
+
+        plt.savefig(filename, bbox_inches="tight", dpi=300)
+        plt.close(fig)
+        print(f"✅ Reconstructed images saved as {filename}")
+
+        #return reconstructed_images  # Returning reconstructed images for further analysis
