@@ -10,7 +10,6 @@ def run_lif_experiments():
     time_steps = 300
     input_current = np.zeros(time_steps)
 
-    input_current[0] = 0.3
     input_current[25:] += 0.3
 
     hyperparams = [
