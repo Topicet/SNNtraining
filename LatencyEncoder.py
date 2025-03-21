@@ -112,29 +112,3 @@ class LatencyEncoder():
         print(f"🔹 Min spike time: {data.min().item():.2f}")
         print(f"🔹 Max spike time: {data.max().item():.2f}")
         print(f"🔹 Mean spike time: {data.mean().item():.2f}")
-
-    def reconstruct_images(self, data, filename="LatencyEncodingResults/LatencyEncoded_Reconstruction.png"):
-        reconstructed_images = data.mean(dim=0).squeeze().cpu()
-
-        original_images = self.data_iterator.squeeze().cpu()
-
-
-        fig, axes = plt.subplots(2, 10, figsize=(15, 3))
-
-        for i in range(10):
-
-            print(f'RMSE for figure {i}: {rmse(original_images[i], reconstructed_images[i])}')
-
-            axes[0, i].imshow(original_images[i], cmap='gray')
-            axes[0, i].set_title(f"Original {self.targets_iterator[i]}")
-            axes[0, i].axis('off')
-
-            axes[1, i].imshow(reconstructed_images[i], cmap='gray')
-            axes[1, i].set_title(f"New {self.targets_iterator[i]}")
-            axes[1, i].axis('off')
-
-        plt.savefig(filename, bbox_inches="tight", dpi=300)
-        plt.close(fig)
-        print(f"✅ Reconstructed images saved as {filename}")
-
-        #return reconstructed_images  # Returning reconstructed images for further analysis
