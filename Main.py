@@ -4,7 +4,7 @@ from Functions.function import rmse, afr
 import numpy as np
 import torch
 import matplotlib.pyplot as plt
-from LIFNeuronVisualizer import LIFNeuronVisualizer  # Ensure correct import
+from LIFNeuronVisualizer import LIFNeuronVisualizer
 
 def run_lif_experiments():
     time_steps = 300
