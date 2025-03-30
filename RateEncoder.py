@@ -9,6 +9,51 @@ import snntorch.spikeplot as splt
 from IPython.display import HTML
 
 class RateEncoder():
+    """
+    RateEncoder: A class for encoding data using rate-based spiking neural network principles.
+    This class provides functionality to preprocess the MNIST dataset, encode it into spike trains, 
+    visualize the spiking activity, and analyze the encoded data. It includes methods for data preparation, 
+    spike generation, visualization, and dataset summary.
+    Classes:
+        RateEncoder: Encodes data into spike trains and provides visualization and analysis tools.
+    Methods:
+        __init__(batch_size=10, num_classes=10, num_subsets=10):
+            Initializes the RateEncoder with specified parameters and prepares the dataset.
+        prepare_data():
+            Prepares the MNIST dataset by selecting one sample for each digit (0-9) and applies transformations.
+        spike_data(numberOfSteps, gain):
+            Encodes the data into spike trains using rate-based encoding.
+        saveAllVisualizations(data):
+            Saves all visualizations including spiking animation, target numbers, and raster plot.
+        animateSpiking(data):
+            Creates and saves an animation of the spiking activity for the first digit.
+        showTargetNumbers(data):
+            Visualizes the average spiking activity for each digit and saves the result.
+        showRasterPlot(data):
+            Generates and saves a raster plot of the spiking activity for the first digit.
+        dataset_summary(data):
+            Prints a summary of the dataset, including batch size, subsets, time steps, and average firing numbers.
+        reconstruct_images(data, filename="RateEncodingResults/RateEncoded_Reconstruction.png"):
+            Reconstructs images from the spike-encoded data, compares them with the original images, 
+            and saves the results.
+    Attributes:
+        batch_size (int): Number of samples per batch.
+        num_classes (int): Number of classes (digits) in the dataset.
+        num_subsets (int): Number of subsets (images) to use.
+        num_steps (int): Number of time steps for spike encoding.
+        transform (torchvision.transforms.Compose): Transformations applied to the dataset.
+        dataset (list): Processed dataset containing one sample per digit.
+        train_loader (torch.utils.data.DataLoader): DataLoader for the processed dataset.
+        data_iterator (torch.Tensor): Batch of images for encoding.
+        targets_iterator (list): List of target labels for the batch.
+        gain (float): Gain factor for spike encoding.
+    Usage:
+        encoder = RateEncoder(batch_size=10, num_classes=10, num_subsets=10)
+        spiked_data = encoder.spike_data(numberOfSteps=100, gain=1.0)
+        encoder.saveAllVisualizations(spiked_data)
+        encoder.dataset_summary(spiked_data)
+        encoder.reconstruct_images(spiked_data)
+    """
 
     def __init__(self, batch_size=10, num_classes=10, num_subsets=10):
         self.batch_size = batch_size        
@@ -19,6 +64,21 @@ class RateEncoder():
 
 
     def prepare_data(self):
+        """
+        Prepares the dataset for training by performing the following steps:
+        - Applies transformations: resizing to 28x28, converting to grayscale, 
+          normalizing, and converting to tensor.
+        - Downloads and loads the MNIST dataset.
+        - Selects one sample for each digit (0-9) from the dataset.
+        - Creates a custom dataset and DataLoader for the selected samples.
+        - Initializes data and target iterators for the selected samples.
+        Attributes:
+            self.transform: Transformation pipeline for preprocessing images.
+            self.dataset: List of tuples containing one image and label for each digit.
+            self.train_loader: DataLoader for the prepared dataset.
+            self.data_iterator: Batch of images from the DataLoader.
+            self.targets_iterator: List of labels corresponding to the selected digits.
+        """
         self.transform = transforms.Compose([
             transforms.Resize((28, 28)),
             transforms.Grayscale(),
@@ -50,87 +110,125 @@ class RateEncoder():
         print(f"Selected Digits: {self.targets_iterator}")  # Should print [0,1,2,3,4,5,6,7,8,9]      
 
     def spike_data(self, numberOfSteps, gain):
-        self.gain = gain
+        """
+        Encodes the data into spike trains using rate-based encoding.
+        Args:
+            numberOfSteps (int): Number of time steps for spike encoding.
+            gain (float): Gain factor to scale the input data for spike generation.
+        Returns:
+            torch.Tensor: Spike-encoded data with shape (time_steps, batch_size, channels, height, width).
+        """
+        self.gain = gain  # Store the gain factor as an attribute
+        # Generate spike trains using rate-based encoding
         return spikegen.rate(self.data_iterator, num_steps=numberOfSteps, gain=gain)
     
         
-    def saveAllVisualizations(self, data):
+    def save_all_visualizations(self, data):
         self.animateSpiking(data)
         self.showTargetNumbers(data)
         self.showRasterPlot(data)
 
-    def animateSpiking(self, data):
-        data = data[:, 0, 0]
+    def animate_spiking(self, data):
+        """
+        Creates and saves an animation of the spiking activity for the first digit.
+        Args:
+            data (torch.Tensor): Spike-encoded data.
+        """
+        data = data[:, 0, 0]  # Extract spiking data for the first digit
         fig, ax = plt.subplots()
-        anim = splt.animator(data, fig, ax)
-        plt.rcParams['animation.ffmpeg_path'] = 'C:\\ffmpeg\\bin\\ffmpeg.exe'
-        HTML(anim.to_html5_video())
-        anim.save("RateEncodingResults\\RateEncoded1stDigit.gif")
+        anim = splt.animator(data, fig, ax)  # Generate animation
+        plt.rcParams['animation.ffmpeg_path'] = 'C:\\ffmpeg\\bin\\ffmpeg.exe'  # Set ffmpeg path for saving
+        HTML(anim.to_html5_video())  # Convert animation to HTML5 video
+        anim.save("RateEncodingResults\\RateEncoded1stDigit.gif")  # Save animation as a GIF
 
-    def showTargetNumbers(self, data):        
-        fig, axes = plt.subplots(2, 5, figsize=(10, 5))  
+    def show_target_numbers(self, data):
+        """
+        Visualizes the average spiking activity for each digit and saves the result.
+        Args:
+            data (torch.Tensor): Spike-encoded data.
+        """
+        fig, axes = plt.subplots(2, 5, figsize=(10, 5))  # Create a 2x5 grid for visualization
         
         for i, ax in enumerate(axes.flat):
-            img = data[:, i].mean(dim=0).squeeze().cpu()
-            ax.imshow(img, cmap='binary')
-            ax.axis('off')
-            ax.set_title(f"Target Value: {self.targets_iterator[i]}")
+            img = data[:, i].mean(dim=0).squeeze().cpu()  # Compute average spiking activity for each digit
+            ax.imshow(img, cmap='binary')  # Display the image
+            ax.axis('off')  # Remove axis for cleaner visualization
+            ax.set_title(f"Target Value: {self.targets_iterator[i]}")  # Add title with target digit
 
-        plt.savefig("RateEncodingResults\\RateEncoded10Digits", bbox_inches="tight", dpi=300)
-        plt.close(fig) 
+        plt.savefig("RateEncodingResults\\RateEncoded10Digits", bbox_inches="tight", dpi=300)  # Save the plot
+        plt.close(fig)  # Close the figure to free memory
 
-    def showRasterPlot(self, data):
-        data = data[:, 0, 0]
-        data = data.reshape((100, -1))
+    def show_raster_plot(self, data):
+        """
+        Generates and saves a raster plot of the spiking activity for the first digit.
+        Args:
+            data (torch.Tensor): Spike-encoded data.
+        """
+        data = data[:, 0, 0]  # Extract spiking data for the first digit
+        data = data.reshape((100, -1))  # Reshape data for raster plot
         fig = plt.figure(facecolor="w", figsize=(10, 5))
         ax = fig.add_subplot(111)
-        splt.raster(data, ax, s=1.5, c="black")
+        splt.raster(data, ax, s=1.5, c="black")  # Generate raster plot
 
-        plt.title("Input Layer")
-        plt.xlabel("Time step")
-        plt.ylabel("Neuron Number")
-        plt.savefig("RateEncodingResults\\RateEncoded1stDigitRasterPlot", bbox_inches="tight", dpi=300)
-        plt.close(fig) 
+        plt.title("Input Layer")  # Add title
+        plt.xlabel("Time step")  # Label x-axis
+        plt.ylabel("Neuron Number")  # Label y-axis
+        plt.savefig("RateEncodingResults\\RateEncoded1stDigitRasterPlot", bbox_inches="tight", dpi=300)  # Save plot
+        plt.close(fig)  # Close the figure to free memory
 
     def dataset_summary(self, data):
+        """
+        Prints a summary of the dataset, including batch size, subsets, time steps, and average firing numbers.
+        Args:
+            data (torch.Tensor): Spike-encoded data.
+        """
         print("Rate Dataset Information:")
         print(f"🔹 Batch Size: {self.batch_size}")
         print(f"🔹 Number of Subsets (Total Images): {self.num_subsets}")
         print(f"🔹 Time Steps: {self.num_steps}")
         print(f"🔹 Data Shape: {data.shape}")
 
+        # Calculate average firing number (AFN) per digit
         afn_per_digit = data.sum(dim=(0, 2, 3, 4)) / self.num_steps
         print("Average Firing Number (AFN) per Digit:")
         for i, afn in enumerate(afn_per_digit):
             print(f"🔹 Digit {self.targets_iterator[i]}: {afn.item():.2f}")
 
+        # Print spike time distribution statistics
         print("Spike Time Distribution:")
         print(f"🔹 Min spike time: {data.min().item():.2f}")
         print(f"🔹 Max spike time: {data.max().item():.2f}")
         print(f"🔹 Mean spike time: {data.mean().item():.2f}")
 
     def reconstruct_images(self, data, filename="RateEncodingResults/RateEncoded_Reconstruction.png"):
-        reconstructed_images = data.mean(dim=0).squeeze().cpu()
+        """
+        Reconstructs images from the spike-encoded data, compares them with the original images, 
+        and saves the results.
+        Args:
+            data (torch.Tensor): Spike-encoded data.
+            filename (str): Path to save the reconstructed images.
+        """
+        reconstructed_images = data.mean(dim=0).squeeze().cpu()  # Compute reconstructed images
+        original_images = self.data_iterator.squeeze().cpu()  # Extract original images
 
-        original_images = self.data_iterator.squeeze().cpu()
-
-
-        fig, axes = plt.subplots(2, 10, figsize=(15, 3))
+        fig, axes = plt.subplots(2, 10, figsize=(15, 3))  # Create a 2x10 grid for visualization
 
         for i in range(10):
-
+            # Compute RMSE between original and reconstructed images
             print(f'RMSE for figure {i}: {rmse(original_images[i], reconstructed_images[i])}')
 
+            # Display original image
             axes[0, i].imshow(original_images[i], cmap='gray')
             axes[0, i].set_title(f"Original {self.targets_iterator[i]}")
             axes[0, i].axis('off')
 
+            # Display reconstructed image
             axes[1, i].imshow(reconstructed_images[i], cmap='gray')
             axes[1, i].set_title(f"New {self.targets_iterator[i]}")
             axes[1, i].axis('off')
 
-        plt.savefig(filename, bbox_inches="tight", dpi=300)
-        plt.close(fig)
+        plt.savefig(filename, bbox_inches="tight", dpi=300)  # Save the plot
+        plt.close(fig)  # Close the figure to free memory
         print(f"✅ Reconstructed images saved as {filename}")
 
         #return reconstructed_images  # Returning reconstructed images for further analysis
