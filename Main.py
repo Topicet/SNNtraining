@@ -5,10 +5,16 @@ import numpy as np
 import torch
 import matplotlib.pyplot as plt
 from LIFNeuronVisualizer import LIFNeuronVisualizer
+from TrainSNN import SNNTrainer
 
 
 if __name__ == "__main__":   
-    pass
+
+    my_snn_trainer = SNNTrainer(batch_size=10,num_steps=100,learning_rate=1e-3,epochs=80)
+
+    my_snn_trainer.train()
+
+
     # latencyEncoder = LatencyEncoder.LatencyEncoder()
     # rateEncoder = RateEncoder.RateEncoder()
     # latencyEncodedData = latencyEncoder.spike_data(numberOfSteps=100,tau=5,threshold=0.005)
