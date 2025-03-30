@@ -4,6 +4,7 @@ import torch.optim as optim
 import torch.nn.functional as F
 import snntorch as snn
 from RateEncoder import RateEncoder
+import os
 import matplotlib.pyplot as plt
 
 class SNNTrainer:
@@ -88,22 +89,42 @@ class SNNTrainer:
 
             # Log training loss
             self.train_loss_log.append(loss.item())
+            printCounter += 1
             if printCounter % 2 == 0:
                 print(f"Epoch {epoch+1}/{self.epochs} | Loss: {loss.item():.4f}")
-                printCounter += 1
+                
 
         # Save the training loss plot
         self.save_loss_plot()
 
     def save_loss_plot(self):
         """
-        Saves a plot of the training loss over epochs.
+        Saves a plot of the training loss over epochs. If the file exists, increments the digit at the end of the filename.
         """
+
+        base_filename = "TrainingResults/training_loss"
+        extension = ".png"
+        filename = base_filename + extension
+
+        # Extract the base filename and increment the digit if it exists
+        if os.path.exists(filename):
+            while os.path.exists(filename):
+                if "_" in filename:
+                    base, digit = filename.rsplit("_", 1)
+                    digit = digit.replace(extension, "")
+                    if digit.isdigit():
+                        filename = f"{base}_{int(digit) + 1}{extension}"
+                    else:
+                        filename = f"{base_filename}_1{extension}"
+                else:
+                    filename = f"{base_filename}_1{extension}"
+
+        # Plot and save the loss
         plt.plot(self.train_loss_log)
         plt.title("Training Loss")
         plt.xlabel("Epoch")
         plt.ylabel("MSE Loss")
-        plt.savefig("training_loss.png")  # Save plot as an image
+        plt.savefig(filename)  # Save plot as an image
         plt.close()
 
     def get_loss_log(self):

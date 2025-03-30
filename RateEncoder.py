@@ -55,7 +55,7 @@ class RateEncoder():
         encoder.reconstruct_images(spiked_data)
     """
 
-    def __init__(self, batch_size=10, num_classes=10, num_subsets=10):
+    def __init__(self, batch_size=10, num_classes=10, num_subsets=1000):
         self.batch_size = batch_size        
         self.num_classes = num_classes
         self.num_subsets = num_subsets
@@ -65,19 +65,8 @@ class RateEncoder():
 
     def prepare_data(self):
         """
-        Prepares the dataset for training by performing the following steps:
-        - Applies transformations: resizing to 28x28, converting to grayscale, 
-          normalizing, and converting to tensor.
-        - Downloads and loads the MNIST dataset.
-        - Selects one sample for each digit (0-9) from the dataset.
-        - Creates a custom dataset and DataLoader for the selected samples.
-        - Initializes data and target iterators for the selected samples.
-        Attributes:
-            self.transform: Transformation pipeline for preprocessing images.
-            self.dataset: List of tuples containing one image and label for each digit.
-            self.train_loader: DataLoader for the prepared dataset.
-            self.data_iterator: Batch of images from the DataLoader.
-            self.targets_iterator: List of labels corresponding to the selected digits.
+        Prepares a dataset of N random MNIST digits.
+        Loads the dataset, applies transformations, and samples a subset of size `num_subsets`.
         """
         self.transform = transforms.Compose([
             transforms.Resize((28, 28)),
@@ -86,28 +75,23 @@ class RateEncoder():
             transforms.Normalize((0,), (1,))
         ])
 
+        # Load the full MNIST dataset
         full_dataset = datasets.MNIST('MNIST', train=True, download=True, transform=self.transform)
 
-        #select digits 0-9
-        digit_samples = {i: None for i in range(10)}
-        for image, label in full_dataset:
-            if digit_samples[label] is None:
-                digit_samples[label] = (image, label)
+        # Randomly select `num_subsets` samples
+        indices = torch.randperm(len(full_dataset))[:self.num_subsets]
+        self.dataset = torch.utils.data.Subset(full_dataset, indices)
 
-            if all(digit_samples.values()): 
-                break
+        # Create DataLoader
+        self.train_loader = DataLoader(self.dataset, batch_size=self.batch_size, shuffle=True)
 
-        images, labels = zip(*digit_samples.values())
-        self.dataset = list(zip(images, labels))
-
-        self.train_loader = DataLoader(self.dataset, batch_size=self.batch_size, shuffle=False)
+        # Load first batch for inspection
         self.data = iter(self.train_loader)
         self.data_iterator, self.targets_iterator = next(self.data)
-
-        
         self.targets_iterator = list(self.targets_iterator.numpy())
 
-        print(f"Selected Digits: {self.targets_iterator}")  # Should print [0,1,2,3,4,5,6,7,8,9]      
+        print(f"Selected Digits in First Batch: {self.targets_iterator}")
+
 
     def spike_data(self, numberOfSteps, gain):
         """
