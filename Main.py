@@ -10,8 +10,7 @@ from TrainSNN import SNNTrainer
 
 if __name__ == "__main__":   
 
-    my_snn_trainer = SNNTrainer(batch_size=10,num_steps=100,learning_rate=1e-3,epochs=80)
-
+    my_snn_trainer = SNNTrainer(batch_size=20,num_steps=100,learning_rate=1e-3,epochs=150)
     my_snn_trainer.train()
 
 

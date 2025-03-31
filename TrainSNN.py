@@ -22,12 +22,14 @@ class SNNTrainer:
 
         # Load encoded spike data and labels
         self.encoder = RateEncoder(batch_size=batch_size)
-        self.spike_data = self.encoder.spike_data(numberOfSteps=num_steps, gain=0.33)  # Encoded spike data
+        self.spike_data = self.encoder.spike_data(numberOfSteps=num_steps, gain=1)  # Encoded spike data
         self.labels = torch.tensor(self.encoder.targets_iterator).to(self.device)  # Target labels
 
         # Build the spiking neural network model
         self.model = self.SNNModel().to(self.device)
         self.optimizer = optim.Adam(self.model.parameters(), lr=self.learning_rate)  # Adam optimizer
+
+        self.print_config()
 
     class SNNModel(nn.Module):
         def __init__(self):
@@ -73,7 +75,6 @@ class SNNTrainer:
         inputs = self.spike_data.to(self.device).float()  # Input spike data
         targets = F.one_hot(self.labels, num_classes=10).float()  # One-hot encoded target labels
 
-        printCounter = 0
         for epoch in range(self.epochs):
             # Forward pass: compute output spikes
             output_spikes = self.model(inputs, self.num_steps)
@@ -89,24 +90,21 @@ class SNNTrainer:
 
             # Log training loss
             self.train_loss_log.append(loss.item())
-            printCounter += 1
-            if printCounter % 2 == 0:
-                print(f"Epoch {epoch+1}/{self.epochs} | Loss: {loss.item():.4f}")
-                
+
+            print(f"Epoch {epoch+1}/{self.epochs} | Loss: {loss.item():.4f}")                
 
         # Save the training loss plot
         self.save_loss_plot()
 
     def save_loss_plot(self):
         """
-        Saves a plot of the training loss over epochs. If the file exists, increments the digit at the end of the filename.
+        Saves a detailed plot of the training loss over epochs.
         """
-
         base_filename = "TrainingResults/training_loss"
         extension = ".png"
         filename = base_filename + extension
 
-        # Extract the base filename and increment the digit if it exists
+        # Increment file version if filename already exists
         if os.path.exists(filename):
             while os.path.exists(filename):
                 if "_" in filename:
@@ -119,16 +117,50 @@ class SNNTrainer:
                 else:
                     filename = f"{base_filename}_1{extension}"
 
-        # Plot and save the loss
-        plt.plot(self.train_loss_log)
-        plt.title("Training Loss")
+        # Generate the plot
+        epochs = list(range(1, len(self.train_loss_log) + 1))
+        losses = self.train_loss_log
+        min_loss = min(losses)
+        min_epoch = losses.index(min_loss) + 1
+
+        plt.figure(figsize=(10, 6))
+        plt.plot(epochs, losses, marker='o', label="Training Loss", color='blue')
+        plt.title(f"Training Loss | Batch Size: {self.batch_size}, LR: {self.learning_rate}, Epochs: {self.epochs}")
         plt.xlabel("Epoch")
         plt.ylabel("MSE Loss")
-        plt.savefig(filename)  # Save plot as an image
+        plt.grid(True)
+        plt.legend()
+
+        # Annotate min loss
+        plt.annotate(f"Min Loss: {min_loss:.4f}",
+                    xy=(min_epoch, min_loss),
+                    xytext=(min_epoch, min_loss + 0.01),
+                    arrowprops=dict(arrowstyle='->', color='red'),
+                    fontsize=10,
+                    color='black')
+
+        plt.tight_layout()
+        plt.savefig(filename)
         plt.close()
+
 
     def get_loss_log(self):
         """
         Returns the training loss log.
         """
         return self.train_loss_log
+    
+
+    def print_config(self):
+        """
+        Prints the key training parameters and model configuration.
+        """
+        print("\n--- SNN Trainer Configuration ---")
+        print(f"Device: {self.device}")
+        print(f"Batch size: {self.batch_size}")
+        print(f"Number of steps: {self.num_steps}")
+        print(f"Learning rate: {self.learning_rate}")
+        print(f"Epochs: {self.epochs}")
+        print(f"Input shape: {self.spike_data.shape}")
+        print(f"Labels shape: {self.labels.shape}")
+        print("----------------------------------\n")
