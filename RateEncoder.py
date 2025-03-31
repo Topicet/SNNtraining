@@ -9,55 +9,9 @@ import snntorch.spikeplot as splt
 from IPython.display import HTML
 
 class RateEncoder():
-    """
-    RateEncoder: A class for encoding data using rate-based spiking neural network principles.
-    This class provides functionality to preprocess the MNIST dataset, encode it into spike trains, 
-    visualize the spiking activity, and analyze the encoded data. It includes methods for data preparation, 
-    spike generation, visualization, and dataset summary.
-    Classes:
-        RateEncoder: Encodes data into spike trains and provides visualization and analysis tools.
-    Methods:
-        __init__(batch_size=10, num_classes=10, num_subsets=10):
-            Initializes the RateEncoder with specified parameters and prepares the dataset.
-        prepare_data():
-            Prepares the MNIST dataset by selecting one sample for each digit (0-9) and applies transformations.
-        spike_data(numberOfSteps, gain):
-            Encodes the data into spike trains using rate-based encoding.
-        saveAllVisualizations(data):
-            Saves all visualizations including spiking animation, target numbers, and raster plot.
-        animateSpiking(data):
-            Creates and saves an animation of the spiking activity for the first digit.
-        showTargetNumbers(data):
-            Visualizes the average spiking activity for each digit and saves the result.
-        showRasterPlot(data):
-            Generates and saves a raster plot of the spiking activity for the first digit.
-        dataset_summary(data):
-            Prints a summary of the dataset, including batch size, subsets, time steps, and average firing numbers.
-        reconstruct_images(data, filename="RateEncodingResults/RateEncoded_Reconstruction.png"):
-            Reconstructs images from the spike-encoded data, compares them with the original images, 
-            and saves the results.
-    Attributes:
-        batch_size (int): Number of samples per batch.
-        num_classes (int): Number of classes (digits) in the dataset.
-        num_subsets (int): Number of subsets (images) to use.
-        num_steps (int): Number of time steps for spike encoding.
-        transform (torchvision.transforms.Compose): Transformations applied to the dataset.
-        dataset (list): Processed dataset containing one sample per digit.
-        train_loader (torch.utils.data.DataLoader): DataLoader for the processed dataset.
-        data_iterator (torch.Tensor): Batch of images for encoding.
-        targets_iterator (list): List of target labels for the batch.
-        gain (float): Gain factor for spike encoding.
-    Usage:
-        encoder = RateEncoder(batch_size=10, num_classes=10, num_subsets=10)
-        spiked_data = encoder.spike_data(numberOfSteps=100, gain=1.0)
-        encoder.saveAllVisualizations(spiked_data)
-        encoder.dataset_summary(spiked_data)
-        encoder.reconstruct_images(spiked_data)
-    """
 
-    def __init__(self, batch_size=10, num_classes=10, num_subsets=1000):
+    def __init__(self, batch_size=10, num_subsets=1000):
         self.batch_size = batch_size        
-        self.num_classes = num_classes
         self.num_subsets = num_subsets
         self.num_steps = 100
         self.prepare_data()

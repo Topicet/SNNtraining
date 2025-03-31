@@ -8,46 +8,8 @@ import matplotlib.pyplot as plt
 import snntorch.spikeplot as splt
 from IPython.display import HTML
 class LatencyEncoder():
-    """
-    LatencyEncoder: A class for latency-based encoding of MNIST dataset images into spiking neural network inputs.
-    This class provides functionality to preprocess the MNIST dataset, encode the data using latency-based encoding, 
-    and visualize the results through animations, raster plots, and target number visualizations. It also includes 
-    methods to summarize the dataset and compute spike time distributions.
-    Classes:
-        LatencyEncoder: Encodes MNIST images into spiking neural network inputs and provides visualization tools.
-    Methods:
-        __init__(batch_size=10, num_classes=10, num_subsets=10):
-            Initializes the LatencyEncoder with specified batch size, number of classes, and subsets.
-        prepare_data():
-            Prepares the MNIST dataset by selecting one sample for each digit (0-9) and loading it into a DataLoader.
-        spike_data(numberOfSteps, tau, threshold):
-            Encodes the dataset into spike trains using latency-based encoding.
-        convert_to_time(data, tau=5, threshold=0.01):
-            Converts input data into spike times based on a given threshold and time constant.
-        saveAllVisualizations(data):
-            Saves all visualizations including spiking animation, target number images, and raster plots.
-        animateSpiking(data):
-            Creates and saves an animation of spiking activity for the first digit in the dataset.
-        showTargetNumbers(data):
-            Visualizes and saves the average spiking activity for each digit in the dataset.
-        showRasterPlot(data):
-            Generates and saves a raster plot of spiking activity for the first digit in the dataset.
-        dataset_summary(data):
-            Prints a summary of the latency-encoded dataset, including batch size, subsets, time steps, 
-            average firing numbers (AFN) per digit, and spike time distribution.
-    Attributes:
-        batch_size (int): Number of samples per batch.
-        num_classes (int): Number of classes (digits) in the dataset.
-        num_subsets (int): Number of subsets (images) to process.
-        num_steps (int): Number of time steps for latency encoding.
-        transform (torchvision.transforms.Compose): Transformations applied to the MNIST dataset.
-        dataset (list): List of selected digit samples (images and labels).
-        train_loader (torch.utils.data.DataLoader): DataLoader for the selected dataset.
-        data_iterator (torch.Tensor): Batch of images after DataLoader iteration.
-        targets_iterator (list): List of target labels corresponding to the batch.
-    """
 
-    def __init__(self, batch_size=10, num_classes=10, num_subsets=10):
+    def __init__(self, batch_size=10, num_subsets=10):
         """
         Initializes the LatencyEncoder with specified batch size, number of classes, and subsets.
         
@@ -57,7 +19,6 @@ class LatencyEncoder():
             num_subsets (int): Number of subsets (images) to process.
         """
         self.batch_size = batch_size        
-        self.num_classes = num_classes
         self.num_subsets = num_subsets
         self.num_steps = 100  # Default number of time steps for latency encoding
         self.prepare_data()  # Prepare the dataset for encoding
@@ -77,29 +38,17 @@ class LatencyEncoder():
         # Load the full MNIST dataset
         full_dataset = datasets.MNIST('MNIST', train=True, download=True, transform=self.transform)
 
-        # Select one sample for each digit (0-9)
-        digit_samples = {i: None for i in range(10)}
-        for image, label in full_dataset:
-            if digit_samples[label] is None:
-                digit_samples[label] = (image, label)  # Store the first occurrence of each digit
+        indices = torch.randperm(len(full_dataset))[:self.num_subsets]
+        self.dataset = torch.utils.data.Subset(full_dataset, indices)
 
-            if all(digit_samples.values()):  # Stop once all digits are selected
-                break
+        self.train_loader = DataLoader(self.dataset, batch_size=self.batch_size, shuffle=True)
 
-        # Extract images and labels from the selected samples
-        images, labels = zip(*digit_samples.values())
-        self.dataset = list(zip(images, labels))  # Create a dataset of selected samples
-
-        # Create a DataLoader for the selected dataset
-        self.train_loader = DataLoader(self.dataset, batch_size=self.batch_size, shuffle=False)
-        self.data = iter(self.train_loader)  # Create an iterator for the DataLoader
-        self.data_iterator, self.targets_iterator = next(self.data)  # Get the first batch of data
-
-        # Convert target labels to a list for easier access
+        self.data = iter(self.train_loader)
+        self.data_iterator, self.targets_iterator = next(self.data)
         self.targets_iterator = list(self.targets_iterator.numpy())
 
-        # Print the selected digits for verification
-        print(f"Selected Digits: {self.targets_iterator}")  # Should print [0,1,2,3,4,5,6,7,8,9]
+        print(f"Selected Digits in First Batch: {self.targets_iterator}")
+
 
     def spike_data(self, numberOfSteps, tau, threshold):
         """

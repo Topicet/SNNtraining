@@ -4,11 +4,12 @@ import torch.optim as optim
 import torch.nn.functional as F
 import snntorch as snn
 from RateEncoder import RateEncoder
+from LatencyEncoder import LatencyEncoder
 import os
 import matplotlib.pyplot as plt
 
 class SNNTrainer:
-    def __init__(self, batch_size=10, num_steps=100, learning_rate=1e-3, epochs=20):
+    def __init__(self, batch_size=10, num_steps=100, learning_rate=1e-3, epochs=20, encoder="rate", gain=1, num_substeps=1000, tau=5,threshold=0.005):
         """
         Initializes the SNNTrainer class with training parameters and model setup.
         """
@@ -20,9 +21,19 @@ class SNNTrainer:
         self.epochs = epochs
         self.train_loss_log = []  # Log to store training loss for each epoch
 
+        self.num_substeps = num_substeps
+        self.gain = gain
+
+        self.tau = tau
+        self.threshold = threshold
+
         # Load encoded spike data and labels
-        self.encoder = RateEncoder(batch_size=batch_size)
-        self.spike_data = self.encoder.spike_data(numberOfSteps=num_steps, gain=1)  # Encoded spike data
+
+        if encoder == "rate":
+            self.get_rate_encoded_data()
+        else:
+            self.get_latency_encoded_data()
+
         self.labels = torch.tensor(self.encoder.targets_iterator).to(self.device)  # Target labels
 
         # Build the spiking neural network model
@@ -30,6 +41,17 @@ class SNNTrainer:
         self.optimizer = optim.Adam(self.model.parameters(), lr=self.learning_rate)  # Adam optimizer
 
         self.print_config()
+
+
+    def get_rate_encoded_data(self):
+        self.encoder = RateEncoder(batch_size=self.batch_size, num_subsets=self.num_substeps)
+        self.encoded_data = self.encoder.encoded_data(numberOfSteps=self.num_steps, gain=self.gain)  # Encoded spike data
+
+    def get_latency_encoded_data(self):
+        self.encoder = LatencyEncoder(batch_size=self.batch_size, num_subsets=self.num_substeps)
+        self.encoded_data = self.encoder.spike_data(numberOfSteps=self.num_steps,tau=self.tau, threshold=self.threshold) # Encoded spike data
+    
+    
 
     class SNNModel(nn.Module):
         def __init__(self):
@@ -72,7 +94,7 @@ class SNNTrainer:
         Trains the SNN model using mean squared error (MSE) loss.
         """
         self.model.train()  # Set model to training mode
-        inputs = self.spike_data.to(self.device).float()  # Input spike data
+        inputs = self.encoded_data.to(self.device).float()  # Input spike data
         targets = F.one_hot(self.labels, num_classes=10).float()  # One-hot encoded target labels
 
         for epoch in range(self.epochs):
@@ -161,6 +183,6 @@ class SNNTrainer:
         print(f"Number of steps: {self.num_steps}")
         print(f"Learning rate: {self.learning_rate}")
         print(f"Epochs: {self.epochs}")
-        print(f"Input shape: {self.spike_data.shape}")
+        print(f"Input shape: {self.encoded_data.shape}")
         print(f"Labels shape: {self.labels.shape}")
         print("----------------------------------\n")
