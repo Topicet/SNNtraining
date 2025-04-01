@@ -10,8 +10,12 @@ from TrainSNN import SNNTrainer
 
 if __name__ == "__main__":   
 
-    my_snn_trainer = SNNTrainer(batch_size=20,num_steps=100,learning_rate=1e-3,epochs=150)
+    my_snn_trainer = SNNTrainer(batch_size=1000,num_steps=100,learning_rate=1e-3,epochs=1000, encoder="rate", gain=1)
     my_snn_trainer.train()
+
+    #my_snn_trainer_latency = SNNTrainer(batch_size=1000, num_steps=100, learning_rate=1e-3,epochs=1000, encoder="latency", tau=5)
+    #my_snn_trainer_latency.train()
+
 
 
     # latencyEncoder = LatencyEncoder.LatencyEncoder()

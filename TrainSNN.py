@@ -11,7 +11,21 @@ import matplotlib.pyplot as plt
 class SNNTrainer:
     def __init__(self, batch_size=10, num_steps=100, learning_rate=1e-3, epochs=20, encoder="rate", gain=1, num_substeps=1000, tau=5,threshold=0.005):
         """
-        Initializes the SNNTrainer class with training parameters and model setup.
+        Initializes the SNNTrainer with training parameters and selects the encoding method.
+
+        Args:
+            batch_size (int): Number of samples per training batch.
+            num_steps (int): Number of time steps in the spiking simulation.
+            learning_rate (float): Learning rate for the Adam optimizer.
+            epochs (int): Number of training epochs.
+            encoder (str): Encoding method to use. Must be either "rate" or "latency".
+            gain (float): Gain value used for rate encoding.
+            num_substeps (int): Number of data samples to use from the dataset.
+            tau (float): Time constant used in latency encoding.
+            threshold (float): Threshold value for latency-based spike generation.
+
+        Raises:
+            SystemExit: If an invalid encoder type is provided.
         """
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")  # Use GPU if available
         print(f"Using device: {self.device}")
@@ -23,16 +37,20 @@ class SNNTrainer:
 
         self.num_substeps = num_substeps
         self.gain = gain
-
+        self.encoding_type = encoder
+        
         self.tau = tau
         self.threshold = threshold
 
         # Load encoded spike data and labels
-
-        if encoder == "rate":
-            self.get_rate_encoded_data()
-        else:
-            self.get_latency_encoded_data()
+        match encoder:
+            case "rate":
+                self.get_rate_encoded_data()
+            case "latency":
+                self.get_latency_encoded_data()
+            case _:
+                print("Invalid encoding type.")
+                exit(0)
 
         self.labels = torch.tensor(self.encoder.targets_iterator).to(self.device)  # Target labels
 
@@ -45,7 +63,7 @@ class SNNTrainer:
 
     def get_rate_encoded_data(self):
         self.encoder = RateEncoder(batch_size=self.batch_size, num_subsets=self.num_substeps)
-        self.encoded_data = self.encoder.encoded_data(numberOfSteps=self.num_steps, gain=self.gain)  # Encoded spike data
+        self.encoded_data = self.encoder.spike_data(numberOfSteps=self.num_steps, gain=self.gain)  # Encoded spike data
 
     def get_latency_encoded_data(self):
         self.encoder = LatencyEncoder(batch_size=self.batch_size, num_subsets=self.num_substeps)
@@ -113,10 +131,11 @@ class SNNTrainer:
             # Log training loss
             self.train_loss_log.append(loss.item())
 
-            print(f"Epoch {epoch+1}/{self.epochs} | Loss: {loss.item():.4f}")                
+            print(f"Epoch {epoch+1}/{self.epochs} | Loss: {loss.item():.4f}")
 
         # Save the training loss plot
         self.save_loss_plot()
+ 
 
     def save_loss_plot(self):
         """
@@ -145,15 +164,28 @@ class SNNTrainer:
         min_loss = min(losses)
         min_epoch = losses.index(min_loss) + 1
 
+        metadata = f"""Encoding: {self.encoding_type}
+Batch Size: {self.batch_size}
+LR: {self.learning_rate}
+Epochs: {self.epochs}"""
+
+        if self.encoding_type == "rate":
+            metadata += f"\nGain: {self.gain}"
+        else:
+            metadata += f"\nTau: {self.tau}, Threshold: {self.threshold}"
+
         plt.figure(figsize=(10, 6))
         plt.plot(epochs, losses, marker='o', label="Training Loss", color='blue')
-        plt.title(f"Training Loss | Batch Size: {self.batch_size}, LR: {self.learning_rate}, Epochs: {self.epochs}")
+        plt.title("Training Loss Curve")
         plt.xlabel("Epoch")
         plt.ylabel("MSE Loss")
         plt.grid(True)
         plt.legend()
 
-        # Annotate min loss
+        # Metadata box
+        plt.gcf().text(1.02, 0.5, metadata, fontsize=10, va='center')
+
+        # Min loss annotation
         plt.annotate(f"Min Loss: {min_loss:.4f}",
                     xy=(min_epoch, min_loss),
                     xytext=(min_epoch, min_loss + 0.01),
@@ -161,9 +193,10 @@ class SNNTrainer:
                     fontsize=10,
                     color='black')
 
-        plt.tight_layout()
-        plt.savefig(filename)
+        plt.tight_layout(rect=[0, 0, 0.85, 1])  # Leave space for the side text
+        plt.savefig(filename, bbox_inches="tight")
         plt.close()
+
 
 
     def get_loss_log(self):
